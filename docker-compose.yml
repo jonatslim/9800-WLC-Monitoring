@@ -1,0 +1,59 @@
+version: '3'
+services:
+  influxdb:
+    image: influxdb:latest
+    restart: unless-stopped
+    container_name: influxdb
+    volumes:
+      # Mount for influxdb data directory and configuration
+      - /mnt/c/Users/jonglim/downloads/git/ios-xe-mdt/influxdb2/config:/etc/influxdb2
+      - /mnt/c/Users/jonglim/downloads/git/ios-xe-mdt/influxdb2/data:/var/lib/influxdb2
+    ports:
+      - "8086:8086"
+    networks:
+      - influxdb
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=telegraf
+      - DOCKER_INFLUXDB_INIT_PASSWORD=cisco123
+      - DOCKER_INFLUXDB_INIT_ORG=bcho.com
+      - DOCKER_INFLUXDB_INIT_BUCKET=9800
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=cisco123
+  telegraf:
+    image: telegraf:latest
+    restart: unless-stopped
+    container_name: telegraf
+    networks:
+      - influxdb
+    ports:
+      - "57000:57000"
+      - "7514:7514"
+    volumes:
+      # Mount for telegraf config
+      - /mnt/c/Users/jonglim/downloads/git/ios-xe-mdt/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    container_name: grafana
+    networks:
+      - influxdb
+    ports:
+      - "3000:3000"
+  syslog-ng:
+    image: balabit/syslog-ng:latest
+    restart: unless-stopped
+    container_name: syslog-ng
+    networks:
+      - influxdb
+    ports:
+      - "514:514/udp"
+      - "601:601"
+    volumes:
+      - /mnt/c/Users/jonglim/downloads/git/ios-xe-mdt/syslog-ng/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf
+      - /mnt/c/Users/jonglim/downloads/git/ios-xe-mdt/syslog-ng/logs:/var/log
+    command: ["--no-caps"]
+networks:
+  influxdb:
+    name: influxdb
